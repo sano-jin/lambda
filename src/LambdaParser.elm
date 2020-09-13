@@ -18,7 +18,7 @@ lexeme p = p |. spaces
 lambda : Parser ()
 lambda = lexeme <| oneOf [ symbol "\\"
                          , symbol "\u{03BB}"  -- unicode lambda
-                         , symbol "\u{00A5}"  -- unicode yen mark
+                         , symbol "\u{00A5}"  -- yen mark
                          ]
 
 isSpace : Char -> Bool
