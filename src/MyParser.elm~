@@ -1,0 +1,99 @@
+module MyParser exposing (..)
+
+import Set
+import Char exposing (..)
+
+type Term = Var Char Int 
+          | App Term Term (Set.Set Char)
+          | Lam Char Term (Set.Set Char)
+
+type alias DeadEnd = { message : String
+                     , column : Int
+                     , row : Int
+                     }
+
+type Error = UnexpectedCharactor Char
+           | ExpectedCharactor Char Char
+           | UnexpectedEnd
+    
+type alias Parser a = (List Char, Int) -> (Result Error a, (List Char, Int)) 
+
+-- run : Parser a -> String -> Result Error a  
+-- run parser str = case parser (Char.toList str) 0 of
+--                      (Ok x, rest, i) -> 
+
+or : Parser a -> Parser a -> Parser a
+or parser1 parser2 =
+    \input ->
+        case parser1 input of
+            (Err _, _) -> parser2 input
+            ok         -> ok 
+
+until : Parser a -> Parser (List a)
+until parser1 =
+    \input ->
+        case parser1 input of
+            (Err _, _) -> (Ok [], input)
+            (Ok val1, rest1) ->
+                case until parser1 rest1 of
+                (Ok val2, rest2) -> (Ok (val1::val2), rest2)
+                err              -> err -- never reaches here
+                                    
+and : Parser a -> Parser b -> Parser (a, b)
+and parser1 parser2 =
+    \input ->
+        case parser1 input of
+            (Err err1, rest1) -> (Err err1, rest1)
+            (Ok val1, rest1) ->
+                case parser2 rest1 of
+                    (Err err2, rest2) -> (Err err2, rest2)
+                    (Ok val2, rest2) -> (Ok (val1, val2), rest2)
+
+lit : Char -> Parser Char
+lit c =
+    \(charList, i) ->
+        case charList of
+            [] -> (Err UnexpectedEnd, (charList, i))
+            x::xs -> if x == c then (Ok x, (xs, i + 1))
+                     else (Err <| ExpectedCharactor x c, (xs, i))
+         
+litF : (Char -> Bool) -> Parser Char
+litF f =
+    \(charList, i) ->
+        case charList of
+            [] -> (Err UnexpectedEnd, (charList, i))
+            x::xs -> if f x then (Ok x, (xs, i + 1))
+                     else (Err <| UnexpectedCharactor x, (xs, i))
+
+isSpace : Char -> Bool
+isSpace ch = case toCode ch of
+                 32 -> True
+                 160 -> True
+                 _ -> False
+
+letter : Parser Char
+letter = litF (\x -> isUpper x || isLower x)
+
+space : Parser Char
+space = litF isSpace
+
+spaces : Parser (List Char)
+spaces = until space
+                     
+        
+lexeme : Parser a -> Parser a
+lexeme parser =
+    \input ->
+        case and parser (until space) input of
+            (Ok (val, _), rest) -> (Ok val, rest)
+            (Err err, rest) -> (Err err, rest)
+
+paren : Parser a -> Parser a
+paren parser =
+    \input ->
+        case and (and (lexeme (lit '('))
+                      (lexeme parser)
+                 )    (lexeme (lit ')')) input of
+            (Ok ((p1, val), p2), rest) -> (Ok val, rest)
+            (Err err, rest)            -> (Err err, rest)
+            
