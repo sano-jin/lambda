@@ -1,7 +1,8 @@
 module LambdaParser exposing
     ( TermLit (..)
     , parser
-    )       
+    , printLit
+    , problem2String )       
 
 import Parser exposing (..)
 import Char
@@ -100,4 +101,22 @@ parser =
        |. spaces
        |= termLit
        |. end 
+
+-- show
+
+printLit term = case term of
+                        VarLit name -> String.fromChar name
+                        AppLit m n -> "(" ++ printLit m ++ printLit n ++ ")"
+                        LamLit x m -> "(\\" ++ String.fromChar x ++"." ++ printLit m ++ ")"
+
+problem2String : Problem -> String
+problem2String problem = case problem of
+                             Expecting str -> "expectiong " ++ str 
+                             ExpectingVariable -> "expecting variable"
+                             ExpectingSymbol str -> "expecting symbol " ++ str
+                             ExpectingKeyword str -> "expecting keyword" ++ str
+                             ExpectingEnd -> "execting end"
+                             UnexpectedChar -> "unexpected char"
+                             Problem str -> "problem " ++ str
+                             other -> "error!"
 

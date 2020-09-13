@@ -46,7 +46,7 @@ update : Msg -> Model -> Model
 update msg model =
     case msg of
         Eval str -> case run parser str of
-                        Ok term -> { model | result = evalAndPrint term , errors = [] }
+                        Ok term -> { model | result = printLit term , errors = [] }
                         Err err -> { model | result = "", errors = err }
                     
         Change str ->
@@ -78,21 +78,3 @@ freeVariable term = case term of
 
      --}
 
-evalAndPrint term = case term of
-                        VarLit name -> String.fromChar name
-                        AppLit m n -> "(" ++ evalAndPrint m ++ evalAndPrint n ++ ")"
-                        LamLit x m -> "(\\" ++ String.fromChar x ++"." ++ evalAndPrint m ++ ")"
-
--- parse
-
-
-problem2String : Problem -> String
-problem2String problem = case problem of
-                             Expecting str -> "expectiong " ++ str 
-                             ExpectingVariable -> "expecting variable"
-                             ExpectingSymbol str -> "expecting symbol " ++ str
-                             ExpectingKeyword str -> "expecting keyword" ++ str
-                             ExpectingEnd -> "execting end"
-                             UnexpectedChar -> "unexpected char"
-                             Problem str -> "problem " ++ str
-                             other -> "error!"
