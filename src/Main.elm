@@ -6,15 +6,54 @@ import Html.Attributes exposing (..)
 import Html.Events exposing (onClick, onInput)
 import Parser exposing (run, DeadEnd, Problem (..))
 import LambdaParser exposing (..)
-import Set
+import Set as S
+import Dict as D
 
 -- Main
+type alias TermAndFV = { term : TermVal, fv : S.Set Char }
 type TermVal = VarVal Char Int 
-             | AppVal TermVal TermVal (Set.Set Char)
-             | LamVal Char TermVal (Set.Set Char)
+             | AppVal TermAndFV TermAndFV
+             | LamVal Char TermAndFV
+             | Error
 
-
+getIndexOf : a -> List a -> Maybe Int
+getIndexOf val list =
+    let getIndexOfHelp l i = 
+            case l of
+                [] -> Nothing
+                h::t -> if h == val then Just i
+                        else getIndexOfHelp t (i + 1)
+    in getIndexOfHelp list 0
+      
+               
+-- l2TC termList env context numberOfFreeVariable
+-- ==> (termAndContext, context, numberOfFreeVariables)
+lit2TFV : TermLit -> List Char -> D.Dict Char Int -> Int
+       -> (TermAndFV, D.Dict Char Int, Int)
+lit2TFV termLit env ctx n =
+    case termLit of
+        VarLit x ->
+            case getIndexOf x env of
+                Just i -> ({ term = VarVal x i, fv = S.empty}, ctx, n)
+                Nothing ->
+                    case D.get x ctx of
+                        Just i -> ({ term = VarVal x i, fv = S.singleton x}, ctx, n)
+                        Nothing -> ({ term = VarVal x n
+                                    , fv = S.singleton x
+                                    }, D.insert x n ctx
+                                   , n + 1)
+        AppLit t1 t2 ->
+            let (tFV1, ctx1, n1) = lit2TFV t1 env ctx n in
+            let (tFV2, ctx2, n2) = lit2TFV t2 env ctx1 n1 in
+            ({ term = AppVal tFV1 tFV2, fv = S.union tFV1.fv tFV2.fv}, ctx2, n2)
+        LamLit var body ->
+            let (ctx_, n_) = if D.member var ctx then (D.remove var ctx, n - 1) else (ctx, n) in
+            let (bTFV, bCtx, bN) = lit2TFV body (var::env) ctx_ n_ in
+            ({ term = LamVal var bTFV, fv = bTFV.fv}, bCtx, bN)
             
+
+
+-- main                               
 main = Browser.sandbox { init = init
                        , update = update
                        , view = view
