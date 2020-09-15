@@ -41,10 +41,10 @@ break : (a -> Bool) -> List a -> (List a, List a)
 break f list = case list of
                    [] -> ([], [])
                    (h::t) as l ->
-                       if f h then 
+                       if f h then ([], l)
+                       else
                            let (pred, suc) = break f t in
                            (h::pred, suc)
-                       else ([], l)
 
 
 
