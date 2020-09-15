@@ -58,18 +58,19 @@ css path =
 
 view : Model -> Html Msg
 view model =
-    div []
+    div [ id "lambda-evaluator" ]
         [ node "link"
               [rel "stylesheet"
               , href "https://fonts.googleapis.com/css2?family=Inconsolata:wght@300&display=swap"
               ] []
         , css "style.css"
-        , input [ id "expression-reader"
-                , placeholder "input lambda expression \u{23CE}"
-                , value model.inputString, onInput Change ] []
-        , button [ id "expression-submitter"
-                 , onClick <| Eval model.inputString ] [ text "parse" ]
-        , div [] [ text (model.result) ]
+        , div [ id "console" ] [ input [ id "expression-reader"
+                         , placeholder "input lambda expression \u{23CE}"
+                         , value model.inputString, onInput Change ] []
+                 , button [ id "expression-submitter"
+                          , onClick <| Eval model.inputString ] [ text "parse" ]
+                 , div [] [ text (model.result) ]
+                 ]
         , div [] <| List.map
             (\err ->
                  div [] [ text <| problem2String err.problem

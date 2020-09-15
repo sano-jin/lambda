@@ -1,34 +1,39 @@
 body {
-    text-align: center;
     background-image: url("background.png");
 }
 
-* {
-    color: #eee;
-    font-size: 40px;
-    background: transparent;
-    outline: none;
-    font-family: 'Inconsolata', monospace;
+#lambda-evaluator {
+    margin: 40vh auto;
 }
 
+#lambda-evaluator *{
+    text-align: center;
+    font-size: 28px;
+    background: transparent;
+    font-family: 'Inconsolata', monospace;
+    color: #eee;
+}
 
-   
-
+#console {
+}
+    
 ::placeholder {
   color: #999;
 }
 
 #expression-reader {
-    width: 60vw;
-    margin-top: 40vh;
-    padding: 0;
+    text-align: left;
+    min-width: 360px;
     border: 1px solid gray;
-    background: rgba(0,0,0,0.5);    
+    background: rgba(0,0,0,0.5);
+    outline: none;
 }
 
 #expression-submitter{
-    width: 15vw;
-    margin-top: 40vh;
     border: 1px solid gray;
     border-radius: 50px;
+    height: max;
+    padding: 0 20px;
+    outline: none;
+    margin-left: 10px;
 }
