@@ -43,8 +43,9 @@ update msg model =
     case msg of
         Eval str -> case run parser str of
                         Ok term ->
-                            let (tfv, _, _) = lit2TFV term [] D.empty 0 in
-                            let valStr = showTFV tfv in
+                            let (tfv, ctx) = lit2TFV term [] [] in
+                            let valStr = showT tfv ctx ++ " [" ++ String.join "," ctx ++ "]"
+                            in
                             { model | result = valStr , errors = [] }
                         Err err -> { model | result = "", errors = err }
                     

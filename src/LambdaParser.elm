@@ -7,9 +7,9 @@ module LambdaParser exposing
 import Parser exposing (..)
 import Char
 
-type TermLit = VarLit Char
+type TermLit = VarLit String
              | AppLit TermLit TermLit
-             | LamLit Char TermLit
+             | LamLit String TermLit
 
 -- Lexer
 
@@ -29,14 +29,10 @@ isSpace c = case c of
                 '\r' -> True
                 _ -> False
          
-varLit : Parser TermLit
+varLit : Parser String
 varLit = chompIf Char.isAlpha
        |> getChompedString
        |> lexeme
-       |> Parser.map (\str -> case String.toList str of
-                                  [c] -> VarLit c
-                                  _ -> VarLit 'x' -- never reaches here
-                     )
 
 -- Parser
 
@@ -55,7 +51,7 @@ paren p =
 lamOrVar : Parser TermLit
 lamOrVar =
     oneOf [ lamLit
-          , varLit
+          , Parser.map VarLit varLit
           , paren <| Parser.lazy (\() -> termLit) 
           ]
                 
@@ -71,26 +67,26 @@ termLits terms =
     , succeed ()
     |> Parser.map (\_ -> Done terms)
     ]
-    
-varLits : Parser (List Char)
-varLits = chompWhile (\c -> Char.isAlpha c || isSpace c) 
-        |> getChompedString
-        |> andThen
-           (\x -> let vars = List.filter (not << isSpace) <| String.toList x
-                  in case List.length vars of
-                         0 -> problem "0 variable"
-                         _ -> succeed vars
-          )
+
+
+varLits : List String -> Parser (Step (List String) (List String)) 
+varLits vars =
+    oneOf
+        [ succeed (\var -> Loop (var::vars))
+        |= varLit
+        , lexeme (symbol ".")
+        |> andThen (\_ -> if List.isEmpty vars then problem "0 arg"
+                              else succeed <| Done (List.reverse vars)) 
+        ]
            
 lamLit : Parser TermLit
 lamLit =
     succeed curry
         |. lambda
-        |= varLits
-        |. lexeme (symbol ".")
+        |= loop [] varLits
         |= Parser.lazy (\() -> termLit)
 
-curry : List Char -> TermLit -> TermLit
+curry : List String -> TermLit -> TermLit
 curry vars body = case vars of
                       [] -> body
                       v::vs -> LamLit v <| curry vs body
@@ -104,10 +100,11 @@ parser =
 
 -- show
 
-printLit term = case term of
-                        VarLit name -> String.fromChar name
-                        AppLit m n -> "(" ++ printLit m ++ printLit n ++ ")"
-                        LamLit x m -> "(\\" ++ String.fromChar x ++"." ++ printLit m ++ ")"
+printLit term =
+    case term of
+        VarLit name -> name
+        AppLit m n -> "(" ++ printLit m ++ printLit n ++ ")"
+        LamLit x m -> "(\\" ++ x ++"." ++ printLit m ++ ")"
 
 problem2String : Problem -> String
 problem2String problem = case problem of
