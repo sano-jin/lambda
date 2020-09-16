@@ -87,14 +87,15 @@ showAppVal tFV env =
         LamVal var body -> showT tFV env
         Error -> " error "
                
-
-newVarFromCh : Char -> Char -> S.Set Char -> Char
-newVarFromCh start ch fv =
-    case S.member ch fv of
-        False -> ch
-        True -> 
-            if start == ch then newVarFromCh start (Char.fromCode <| Char.toCode ch + 1) fv
-            else if ch == 'z' then newVarFromCh start 'A' fv
-                 else if ch == 'Z' then newVarFromCh start 'a' fv
-                 else newVarFromCh start (Char.fromCode <| Char.toCode ch + 1) fv
-    
+newVar : String -> String -> S.Set String -> String
+newVar start var fv =
+    case S.member var fv of
+        False -> var
+        True ->
+            if start <= "z" && start == var then newVar start "\u{00C0}" fv
+            else case var of
+                     "z" -> newVar start "A" fv
+                     "Z" -> newVar start "a" fv
+                     _ ->  newVar start (String.map
+                                             (\ch -> Char.fromCode
+                                                     <| Char.toCode ch + 1) var) fv                    
