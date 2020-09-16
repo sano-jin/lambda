@@ -44,8 +44,7 @@ update msg model =
         Eval str -> case run parser str of
                         Ok term ->
                             let (tfv, ctx) = lit2TFV term [] [] in
-                            let valStr = showT tfv ctx ++ " [" ++ String.join "," ctx ++ "]"
-                            in
+                            let valStr = showT tfv ctx ++ " [" ++ String.join "," ctx ++ "]" in
                             { model | result = valStr , errors = [] }
                         Err err -> { model | result = "", errors = err }
                     
@@ -81,12 +80,3 @@ view model =
                         ]
             ) model.errors
         ]                             
--- functions
-{--
-freeVariable term = case term of
-                        VarLit name _ -> Set.singleton name
-                        AppLit m n -> Set.union (freeVariable m) (freeVariable n)
-                        LamLit x m -> Set.remove x (freeVariable m)
-
-     --}
-
