@@ -43,7 +43,7 @@ lit2TFV termLit env ctx =
             ({ term = AppVal tFV1 tFV2, fv = S.union tFV1.fv tFV2.fv}, ctx2)
         LamLit var body ->
             let (bTFV, bCtx) = lit2TFV body (env ++ [var]) ctx in
-            ({ term = LamVal var bTFV, fv = bTFV.fv}, bCtx)
+            ({ term = LamVal var bTFV, fv = S.remove var bTFV.fv}, bCtx)
 
 -- show
 
