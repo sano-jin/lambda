@@ -1,14 +1,16 @@
 body {
     background-image: url("background.png");
+    background-repeat: no-repeat;
+    background-color: #171717;
 }
 
 #lambda-evaluator {
     margin: 40% auto;
+    position: relative;
 }
 
 #lambda-evaluator *{
     text-align: center;
-    font-size: 28px;
     background: transparent;
     font-family: 'Inconsolata', monospace;
     color: #eee;
@@ -23,7 +25,6 @@ body {
 
 #expression-reader {
     text-align: left;
-    min-width: 360px;
     border: 1px solid gray;
     background: rgba(0,0,0,0.5);
     outline: none;
@@ -35,5 +36,27 @@ body {
     height: max;
     padding: 0 20px;
     outline: none;
-    margin-left: 10px;
+}
+
+@media only screen and (min-width: 601px) {
+    #lambda-evaluator *{
+	font-size: 28px;
+    }
+    #expression-reader {
+	min-width: 360px;
+    }
+    #expression-submitter {
+	margin-left: 10px;
+    }
+}
+
+@media only screen and (max-width: 600px) {
+    #console {
+	width: 100%;
+    }
+    
+    #lambda-evaluator *{
+	font-size: 24px;
+	width: 100%;
+    }
 }

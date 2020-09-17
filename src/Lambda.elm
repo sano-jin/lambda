@@ -84,7 +84,7 @@ showAppVal tFV env =
     case tFV.term of
         VarVal _ -> showT tFV env
         AppVal tFV1 tFV2 -> "(" ++ showAppFun tFV1 env ++ showAppVal tFV2 env ++ ")"
-        LamVal var body -> showT tFV env
+        LamVal var body -> showAppFun tFV env
         Error -> " error "
                
 newVar : String -> String -> S.Set String -> String

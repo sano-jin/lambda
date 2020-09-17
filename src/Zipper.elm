@@ -3,38 +3,65 @@ module Zipper exposing (..)
 import Lambda exposing (..)
 import Set as S
 
-type Tree a = Join Int
-            | Beta a (List (Tree a))
-            | Alpha a (Tree a)
+type Trans a = Join Int
+             | Beta a (List (Trans a))
+             | Alpha a (Trans a)
+             | Eta a (Trans a)
             
-type Crumb a = BetaCrumb a (List (Tree a))
-             | AlphaCrumb a
+type CrumbTrans a = BetaCrumb a (List (Trans a))
+                  | AlphaCrumb a
+                  | EtaCrumb a
 
-type alias Zipper a = (Tree a, List (Crumb a))
+type alias TransZipper a = (Trans a, List (CrumbTrans a))
 
-goUp : Zipper a -> Zipper a
+type CrumbTerm = AppLeftCrumb TermAndFV
+               | AppRightCrumb TermAndFV
+               | LamCrumb String
+
+type alias TermZipper = (TermAndFV, List CrumbTerm)
+
+    
+goUp : TransZipper a -> TransZipper a
 goUp zipper =
     case zipper of
-        (s1, BetaCrumb s2 children::bs) -> (Beta s2 (s1::children), bs)
-        (s1, AlphaCrumb s2::bs) -> (Alpha s2 s1, bs)
+        (a1, BetaCrumb a2 children::bs) -> (Beta a2 (a1::children), bs)
+        (a1, AlphaCrumb a2::bs) -> (Alpha a2 a1, bs)
+        (a1, EtaCrumb a2::bs) -> (Eta a2 a1, bs)
         top -> top
     
-topMost : Zipper a -> Zipper a
+topMost : TransZipper a -> TransZipper a
 topMost zipper =
     case zipper of
         (t, []) -> (t, [])
         z -> topMost (goUp z)
 
-evaluator : Zipper TermAndFV -> Zipper TermAndFV
+evaluator : TransZipper TermZipper -> TransZipper TermZipper
 evaluator (termAndFV, path) = (termAndFV, path)
 
 
-eval : TermAndFV -> S.Set TermAndFV
-eval (termAndFV, path) =
+eval : TransZipper TermZipper -> TransZipper TermZipper
+eval ((termAndFV, termPath), transPath) =
     case termAndFV.term of
         AppVal fun val ->
             case fun.term of
                 LamVal var body ->
-                    
-
-    
+                    beta var body val termPath transPath
+                _ -> let (_, transPath_) = eval ((fun
+                                                 , LamCrumb var::AppLeftCrumb val::termPath)
+                                                , transPath)
+                     in 
+                         eval ((val
+                               , LamCrumb var::AppLeftCrumb val::termPath)
+                              , transPath)
+        LamVal var body ->
+            case body.term of
+                AppVal fun val ->
+                    if val.term == VarVal 0 && not <| S.member var fun.fv then
+                        eta fun termPath transPath
+                _ -> let ((termAndFV_, termPath_), transPath_)
+                             = eval ((body
+                                     , AppCrumb val::AppLeftCrumb val::termPath)
+                                    , transPath)
+                     in ((LamVal var termAndFV_, termPath_), transPath_)
+        _ -> let ((termAndFV, termPath), transPath)
+                
