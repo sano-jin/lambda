@@ -24,7 +24,7 @@ type alias TermZipper = (TermAndFV, List CrumbTerm)
 goUp : TransZipper a -> TransZipper a
 goUp zipper =
     case zipper of
-        (a1, BetaCrumb a2 children::bs) -> (Beta a2 (a1::children), bs)
+        (a1, BetaCrumb a2 children::b::bs) -> (Beta a2 (a1::children), b::bs)
         (a1, AlphaCrumb a2::bs) -> (Alpha a2 a1, bs)
         (a1, EtaCrumb a2 children::bs) -> (Eta a2 (a1::children), bs)
         top -> top
@@ -72,7 +72,22 @@ eval (termAndFV, termPath) transZipper =
                 _ -> eval (body, LamCrumb var termAndFV.fv::termPath) transZipper
         _ -> transZipper
 
-beta var body val termPath transZipper = transZipper
+shift index cutoff term =
+    case term of
+        VarVal i -> if i < cutoff then i
+                    else i + index
+        AppVal
+             
+beta var body val termPath transZipper =
+    substitute var 0 body val 
 
+substitute var index body val =
+    case body of
+        VarVal i -> if i == index then 
+                    else topMostTerm (body, termPath)
+        AppVal left right ->
+            
+    if S.member var val.fv then 
+        
 
 eta fun termPath transZipper = transZipper
