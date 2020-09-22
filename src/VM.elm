@@ -35,7 +35,11 @@ topMostTerm zipper =
 evaluator : TermZipper -> D.Dict String Int -> Int -> (State TermAndFV, D.Dict String Int, Int)
 evaluator (termAndFV, termPath) statesDict i = (Join 0, statesDict, i)
 
-
+vm : TermAndFV -> State TermAndFV
+vm termAndFV =
+    let (children, _, _) = eval (termAndFV, []) (D.singleton (toPostfixNotation termAndFV) 0) 0 in
+    State termAndFV children
+    
 evalChildren fun val fv termPath statesDict stateIndex =
     let (funChildren, funStatesDict, funStateIndex) =
             eval (fun, AppLeftCrumb val fv::termPath) statesDict stateIndex in
@@ -75,11 +79,11 @@ betaTrans var body val termPath statesDict stateIndex =
                 let (children, statesDict_, stateIndex_) =
                         eval (evalued, []) (D.insert postfix stateIndex statesDict) (stateIndex + 1) in
                 (State evalued children, statesDict_, stateIndex_)
-            Just i -> (Join i, statesDict, stateIndex + 1)
+            Just i -> (Join (stateIndex - i), statesDict, stateIndex + 1)
 
 etaTrans : TermAndFV -> List TermCrumb -> D.Dict String Int -> Int -> (State TermAndFV, D.Dict String Int, Int)
 etaTrans fun termPath statesDict stateIndex =
-    let (term, _) = topMostTerm (fun, termPath)
+    let (term, _) = topMostTerm (shift fun -1 0, termPath)
         postfix = toPostfixNotation term
     in
         case D.get postfix statesDict of
@@ -87,4 +91,4 @@ etaTrans fun termPath statesDict stateIndex =
                 let (children, statesDict_, stateIndex_) =
                         eval (term, []) (D.insert postfix stateIndex statesDict) (stateIndex + 1) in
                 (State term children, statesDict_, stateIndex_)
-            Just i -> (Join i, statesDict, stateIndex + 1)
+            Just i -> (Join (stateIndex - i), statesDict, stateIndex + 1)

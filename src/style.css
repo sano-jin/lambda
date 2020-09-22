@@ -5,12 +5,12 @@ body {
 }
 
 #lambda-evaluator {
-    margin: 40% auto;
+    text-align: center;
+    margin: 100px auto;
     position: relative;
 }
 
 #lambda-evaluator *{
-    text-align: center;
     background: transparent;
     font-family: 'Inconsolata', monospace;
     color: #eee;
@@ -38,6 +38,10 @@ body {
     outline: none;
 }
 
+#states {
+    text-align: left;
+}
+
 @media only screen and (min-width: 601px) {
     #lambda-evaluator *{
 	font-size: 28px;
@@ -60,3 +64,4 @@ body {
 	width: 100%;
     }
 }
+

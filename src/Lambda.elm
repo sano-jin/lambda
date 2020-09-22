@@ -41,7 +41,7 @@ lit2TFV termLit env ctx =
             let (tFV2, ctx2) = lit2TFV t2 env ctx1 in
             ({ term = AppVal tFV1 tFV2, fv = S.union tFV1.fv tFV2.fv}, ctx2)
         LamLit var body ->
-            let (bTFV, bCtx) = lit2TFV body (env ++ [var]) ctx in
+            let (bTFV, bCtx) = lit2TFV body (var::env) ctx in
             ({ term = LamVal var bTFV, fv = S.remove var bTFV.fv}, bCtx)
 
 shift : TermAndFV -> Int -> Int -> TermAndFV
@@ -60,7 +60,7 @@ substitute termAndFV1 termAndFV2 m =
         VarVal n -> if n == m then termAndFV2
                     else termAndFV1
         AppVal fun val ->
-            let (fun_, val_) =  (substitute fun val m, substitute fun val m) in
+            let (fun_, val_) =  (substitute fun termAndFV2 m, substitute val termAndFV2 m) in
             { term = AppVal fun_ val_
             , fv = S.union fun_.fv val_.fv
             }
@@ -82,7 +82,7 @@ beta var body val =
     let val_ = shift val 1 0
         val__ = substitute body val_ 0
     in
-        shift val_ -1 0
+        shift val__ -1 0
                                    
 -- convert to postfix notation
 toPostfixNotation : TermAndFV -> String
@@ -104,16 +104,15 @@ showT tFV env =
     case tFV.term of
         VarVal i ->
             case nth i env of
-                Just var -> var
+                Just var -> var ++ String.fromInt i 
                 Nothing -> " Error " -- never reaches here
         AppVal tFV1 tFV2 -> showAppFun tFV1 env ++ showAppVal tFV2 env
         LamVal var body -> "\\" ++ var ++ showCurriedAbs body (var::env) 
 
 showCurriedAbs tFV env =
     case tFV.term of
-        VarVal _ -> "." ++ showT tFV env
-        AppVal tFV1 tFV2 -> "." ++ showAppFun tFV1 env ++ showAppVal tFV2 env
         LamVal var body -> var ++ showCurriedAbs body (var::env) 
+        _ -> "." ++ showT tFV env
 
 showAppFun tFV env =
     case tFV.term of
@@ -122,22 +121,33 @@ showAppFun tFV env =
         LamVal var body ->
             "(\\" ++ var ++ showCurriedAbs body (var::env) ++ ")"
 
-                                    
 showAppVal tFV env =
     case tFV.term of
         VarVal _ -> showT tFV env
         AppVal tFV1 tFV2 -> "(" ++ showAppFun tFV1 env ++ showAppVal tFV2 env ++ ")"
         LamVal var body -> showAppFun tFV env
                
+getNewVar : String -> String -> S.Set String -> String
+getNewVar start var fv =
+    case S.member var fv of
+        False -> var
+        True ->
+            if start <= "z" && start == var then getNewVar start "\u{00C0}" fv
+            else case var of
+                     "z" -> getNewVar start "A" fv
+                     "Z" -> getNewVar start "a" fv
+                     _ ->  getNewVar start (String.map
+                                             (\ch -> Char.fromCode
+                                                     <| Char.toCode ch + 1) var) fv                    
+
 newVar : String -> String -> S.Set String -> String
 newVar start var fv =
     case S.member var fv of
         False -> var
         True ->
-            if start <= "z" && start == var then newVar start "\u{00C0}" fv
-            else case var of
-                     "z" -> newVar start "A" fv
-                     "Z" -> newVar start "a" fv
-                     _ ->  newVar start (String.map
+            case var of
+                     "z" -> getNewVar start "A" fv
+                     "Z" -> getNewVar start "a" fv
+                     _ ->  getNewVar start (String.map
                                              (\ch -> Char.fromCode
                                                      <| Char.toCode ch + 1) var) fv                    
