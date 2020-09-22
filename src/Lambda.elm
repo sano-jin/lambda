@@ -5,7 +5,7 @@ import Set as S
 import Dict as D
 
 type alias TermAndFV = { term : TermVal, fv : S.Set String }
-type TermVal = VarVal Int 
+type TermVal = VarVal String 
              | AppVal TermAndFV TermAndFV
              | LamVal String TermAndFV
 
@@ -26,106 +26,91 @@ lit2TFV : TermLit -> List String -> List String
 lit2TFV termLit env ctx =
     case termLit of
         VarLit x ->
-            let fv_ = S.singleton x in
-            case getIndexOf x env of
-                Ok i -> ({ term = VarVal i, fv = fv_}, ctx)
-                Err cutoff ->
-                    case getIndexOf x ctx of
-                        Ok i -> ({ term = VarVal (i + cutoff), fv = fv_}, ctx)
-                        Err n -> ({ term = VarVal (n + cutoff)
-                                  , fv = fv_
-                                  }, ctx ++ [x]
-                                 )
+            let fv = S.singleton x
+                ctx_ = if List.member x env then ctx
+                       else x::ctx
+            in
+                ({ term = VarVal x, fv = fv}, ctx_)
         AppLit t1 t2 ->
-            let (tFV1, ctx1) = lit2TFV t1 env ctx in
-            let (tFV2, ctx2) = lit2TFV t2 env ctx1 in
+            let (tFV1, ctx1) = lit2TFV t1 env ctx
+                (tFV2, ctx2) = lit2TFV t2 env ctx1 in
             ({ term = AppVal tFV1 tFV2, fv = S.union tFV1.fv tFV2.fv}, ctx2)
         LamLit var body ->
             let (bTFV, bCtx) = lit2TFV body (var::env) ctx in
             ({ term = LamVal var bTFV, fv = S.remove var bTFV.fv}, bCtx)
 
-shift : TermAndFV -> Int -> Int -> TermAndFV
-shift termAndFV i c =
-    { termAndFV | term = 
-          case termAndFV.term of
-              VarVal n -> if n < c then VarVal n 
-                          else VarVal <| n + i
-              AppVal fun val -> AppVal (shift fun i c)  (shift val i c)
-              LamVal var body -> LamVal var <| shift body i (c + 1)
-    }
-
-substitute : TermAndFV -> TermAndFV -> Int -> TermAndFV
-substitute termAndFV1 termAndFV2 m =
+substitute : String -> TermAndFV -> TermAndFV -> TermAndFV
+substitute var termAndFV1 termAndFV2 =
     case termAndFV1.term of
-        VarVal n -> if n == m then termAndFV2
+        VarVal x -> if x == var then termAndFV2
                     else termAndFV1
         AppVal fun val ->
-            let (fun_, val_) =  (substitute fun termAndFV2 m, substitute val termAndFV2 m) in
+            let (fun_, val_) =  (substitute var fun termAndFV2, substitute var val termAndFV2) in
             { term = AppVal fun_ val_
             , fv = S.union fun_.fv val_.fv
             }
-        LamVal var body -> let (var_, body_) =
-                                   if S.member var termAndFV2.fv then
-                                       let var__ = newVar var var
-                                                   <| S.union termAndFV2.fv body.fv in
-                                       (var__
-                                       , substitute body {term = VarVal 0
-                                                         , fv = S.singleton var__ } 0)
-                                   else (var, body)
-                               body__ = substitute body_ (shift termAndFV2 1 0) (m + 1)
-                           in { term = LamVal var_ body__
-                              , fv = S.remove var_ body__.fv
-                              }
+        LamVal x body ->
+            if x == var then termAndFV1
+            else let (x_, body_) =
+                         if S.member x termAndFV2.fv then
+                             let z = newVar x x
+                                         <| S.union termAndFV2.fv body.fv in
+                             (z
+                             , substitute x body {term = VarVal z
+                                                   , fv = S.singleton z })
+                         else (x, body)
+                     body__ = substitute var body_ termAndFV2
+                 in { term = LamVal x_ body__
+                    , fv = S.remove x_ body__.fv
+                    }
 
 beta : String -> TermAndFV -> TermAndFV -> TermAndFV
 beta var body val =
-    let val_ = shift val 1 0
-        val__ = substitute body val_ 0
-    in
-        shift val__ -1 0
+    substitute var body val
                                    
 -- convert to postfix notation
-toPostfixNotation : TermAndFV -> String
-toPostfixNotation tFV =
+getIndex : a -> List a -> Maybe Int
+getIndex x list =
+    let getIndexHelp l i = 
+            case l of
+                [] -> Nothing
+                h::t -> if h == x then Just i
+                        else getIndexHelp t (i + 1)
+    in getIndexHelp list 0
+    
+toPostfixNotation : TermAndFV -> List String -> String
+toPostfixNotation tFV env =
     case tFV.term of
-        VarVal i -> String.fromInt i
-        AppVal m n -> toPostfixNotation m ++ toPostfixNotation m ++ "@"
-        LamVal _ body -> toPostfixNotation body ++ "\\"
+        VarVal x -> case getIndex x env of
+                        Nothing -> x
+                        Just i -> String.fromInt i
+        AppVal m n -> toPostfixNotation m env ++ toPostfixNotation n env ++ "@"
+        LamVal x body -> toPostfixNotation body (x::env) ++ "\\"
 
 -- show
-nth : Int -> List a -> Maybe a
-nth i list = case list of
-                 [] -> Nothing
-                 h::t -> if 0 < i then nth (i - 1) t
-                         else Just h
-    
-showT : TermAndFV -> List String -> String
-showT tFV env =
+showT : TermAndFV -> String
+showT tFV =
     case tFV.term of
-        VarVal i ->
-            case nth i env of
-                Just var -> var ++ String.fromInt i 
-                Nothing -> " Error " -- never reaches here
-        AppVal tFV1 tFV2 -> showAppFun tFV1 env ++ showAppVal tFV2 env
-        LamVal var body -> "\\" ++ var ++ showCurriedAbs body (var::env) 
+        VarVal x -> x
+        AppVal tFV1 tFV2 -> showAppFun tFV1 ++ showAppVal tFV2
+        LamVal var body -> "\\" ++ var ++ showCurriedAbs body 
 
-showCurriedAbs tFV env =
+showCurriedAbs tFV =
     case tFV.term of
-        LamVal var body -> var ++ showCurriedAbs body (var::env) 
-        _ -> "." ++ showT tFV env
+        LamVal var body -> var ++ showCurriedAbs body
+        _ -> "." ++ showT tFV
 
-showAppFun tFV env =
+showAppFun tFV =
     case tFV.term of
-        VarVal _ -> showT tFV env
-        AppVal tFV1 tFV2 -> showAppFun tFV1 env ++ showAppVal tFV2 env
         LamVal var body ->
-            "(\\" ++ var ++ showCurriedAbs body (var::env) ++ ")"
+            "(\\" ++ var ++ showCurriedAbs body ++ ")"
+        _ -> showT tFV
 
-showAppVal tFV env =
+showAppVal tFV =
     case tFV.term of
-        VarVal _ -> showT tFV env
-        AppVal tFV1 tFV2 -> "(" ++ showAppFun tFV1 env ++ showAppVal tFV2 env ++ ")"
-        LamVal var body -> showAppFun tFV env
+        VarVal _ -> showT tFV
+        AppVal tFV1 tFV2 -> "(" ++ showAppFun tFV1 ++ showAppVal tFV2 ++ ")"
+        LamVal var body -> showAppFun tFV
                
 getNewVar : String -> String -> S.Set String -> String
 getNewVar start var fv =

@@ -49,7 +49,7 @@ update msg model =
         Eval str -> case run parser str of
                         Ok term ->
                             let (tfv, ctx) = lit2TFV term [] [] in
-                            let valStr = showT tfv ctx ++ " [" ++ String.join "," ctx ++ "]" in
+                            let valStr = showT tfv ++ " [" ++ String.join "," ctx ++ "]" in
                             { model | result = valStr , errors = [], ctx = ctx, states = Just <| vm tfv }
                         Err err -> { model | result = "", errors = err, states = Nothing }
                     
@@ -80,7 +80,7 @@ view model =
         , div [ id "states" ] [
                case model.states of
                    Nothing -> text "Nothing"
-                   Just states -> ul [] [ view_of_states states "root" model.ctx ]
+                   Just states -> ul [] [ view_of_states states "root" ]
               ]
         , div [] <| List.map
             (\err ->
@@ -92,8 +92,8 @@ view model =
             ) model.errors
         ]                             
 
-view_of_states : State TermAndFV -> String -> List String -> Html Msg
-view_of_states state transType ctx =
+view_of_states : State TermAndFV -> String -> Html Msg
+view_of_states state transType =
     case state of
         Join i -> li [ style "height" <| String.fromInt (i * 20)
                       , class "join"
@@ -102,11 +102,11 @@ view_of_states state transType ctx =
         State term children ->
             li [ class transType ]
                 [ div [] [ text transType ]
-                , div [ class "term" ] [ text <| showT term ctx ]
+                , div [ class "term" ] [ text <| showT term ]
                 , ul [ class "children" ] <|
                     List.map (\trans -> case trans of
-                                            BetaTrans s -> view_of_states s "beta" ctx
-                                            EtaTrans s -> view_of_states s "eta" ctx
+                                            BetaTrans s -> view_of_states s "beta"
+                                            EtaTrans s -> view_of_states s "eta"
                              ) children
                 ]
     

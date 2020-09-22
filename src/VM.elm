@@ -37,7 +37,7 @@ evaluator (termAndFV, termPath) statesDict i = (Join 0, statesDict, i)
 
 vm : TermAndFV -> State TermAndFV
 vm termAndFV =
-    let (children, _, _) = eval (termAndFV, []) (D.singleton (toPostfixNotation termAndFV) 0) 0 in
+    let (children, _, _) = eval (termAndFV, []) (D.singleton (toPostfixNotation termAndFV []) 0) 0 in
     State termAndFV children
     
 evalChildren fun val fv termPath statesDict stateIndex =
@@ -60,11 +60,11 @@ eval (termAndFV, termPath) statesDict stateIndex =
             LamVal var body ->
                 case body.term of
                     AppVal fun val ->
-                        if val.term == VarVal 0 && not (S.member var fun.fv) then
+                        if val.term == VarVal var && not (S.member var fun.fv) then
                             let (evalued, statesDict_, stateIndex_) = etaTrans fun termPath statesDict stateIndex in
-                            let (children, statesDict__, stateIndex__) = evalChildren fun val body.fv (LamCrumb var termAndFV.fv::termPath) statesDict_ stateIndex_ in
+                            let (children, statesDict__, stateIndex__) = eval (body, LamCrumb var termAndFV.fv::termPath) statesDict_ stateIndex_ in
                             (EtaTrans evalued::children, statesDict__, stateIndex__) 
-                        else evalChildren fun val body.fv (LamCrumb var termAndFV.fv::termPath) statesDict stateIndex
+                        else eval (body, LamCrumb var termAndFV.fv::termPath) statesDict stateIndex
                     _ -> eval (body, LamCrumb var termAndFV.fv::termPath) statesDict stateIndex
             _ -> ([], statesDict, stateIndex)
 
@@ -72,7 +72,7 @@ betaTrans : String -> TermAndFV -> TermAndFV -> List TermCrumb -> D.Dict String 
 betaTrans var body val termPath statesDict stateIndex =
     let evaluedTerm = beta var body val
         (evalued, _) = topMostTerm (evaluedTerm, termPath)
-        postfix = toPostfixNotation evalued
+        postfix = toPostfixNotation evalued []
     in
         case D.get postfix statesDict of
             Nothing ->
@@ -83,8 +83,8 @@ betaTrans var body val termPath statesDict stateIndex =
 
 etaTrans : TermAndFV -> List TermCrumb -> D.Dict String Int -> Int -> (State TermAndFV, D.Dict String Int, Int)
 etaTrans fun termPath statesDict stateIndex =
-    let (term, _) = topMostTerm (shift fun -1 0, termPath)
-        postfix = toPostfixNotation term
+    let (term, _) = topMostTerm (fun, termPath)
+        postfix = toPostfixNotation term []
     in
         case D.get postfix statesDict of
             Nothing ->
