@@ -42,6 +42,7 @@ body {
 .states ul {
     list-style-type: none;
     line-height: 1.25em;
+    margin: 0;
 }
 
 .states ul li ul { 
