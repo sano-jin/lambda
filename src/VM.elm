@@ -33,9 +33,6 @@ topMostTerm zipper =
         (t, []) -> (t, [])
         z -> topMostTerm (goUpTerm z)
 
-evaluator : TermZipper -> D.Dict String Int -> Int -> (State TermAndFV, D.Dict String Int, Int)
-evaluator (termAndFV, termPath) statesDict i = (Join 0, statesDict, i)
-
 vm : TermAndFV -> State TermAndFV
 vm termAndFV =
     let (children, _, _) = eval (termAndFV, []) (D.singleton (toPostfixNotation termAndFV []) 0) 0 in
@@ -71,7 +68,7 @@ eval (termAndFV, termPath) statesDict stateIndex =
 
 betaTrans : String -> TermAndFV -> TermAndFV -> List TermCrumb -> D.Dict String Int -> Int -> (State TermAndFV, D.Dict String Int, Int)
 betaTrans var body val termPath statesDict stateIndex =
-    let evaluedTerm = beta var body val
+    let evaluedTerm = substitute var body val
         (evalued, _) = topMostTerm (evaluedTerm, termPath)
         postfix = toPostfixNotation evalued []
     in

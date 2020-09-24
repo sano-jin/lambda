@@ -17,9 +17,7 @@ main = Browser.sandbox { init = init
                        , view = view
                        }
 
-         
 -- Model
-
 type alias Model =
     { inputString : String
     , states : Maybe (State TermAndFV)
@@ -34,7 +32,6 @@ init =
     }
 
 -- Update
-
 type Msg
     = Change String
     | Eval String
@@ -51,31 +48,21 @@ update msg model =
             { model | inputString = str }
 
 -- View
-
-css path =
-    node "link" [rel "stylesheet", href path ] []
+css path = node "link" [rel "stylesheet", href path ] []
 
 view : Model -> Html Msg
 view model =
-    div [ id "lambda-evaluator" ]
-        [ node "link"
-              [rel "stylesheet"
-              , href "https://fonts.googleapis.com/css2?family=Inconsolata:wght@300&display=swap"
-              ] []
+    div [ class "interpreter" ]
+        [ css "https://fonts.googleapis.com/css2?family=Inconsolata:wght@300&display=swap"
         , css "style.css"
-        , div [ id "console" ]
-            [ input [ id "expression-reader"
+        , div [ class "console" ]
+            [ input [ class "reader"
                     , placeholder "input lambda expression \u{23CE}"
                     , value model.inputString, onInput Change ] []
-            , button [ id "expression-submitter"
+            , button [ class "submitter"
                      , onClick <| Eval model.inputString ] [ text "run" ]
             ]
-        , div [ id "states" ] [
-               case model.states of
-                   Nothing -> text "..."
-                   Just states -> ul [] [ view_of_states states "root" ]
-              ]
-        , div [] <| List.map
+        , div [ class "errors" ] <| List.map
             (\err ->
                  div [] [ text <| problem2String err.problem
                         , div [] [ text <|
@@ -83,6 +70,11 @@ view model =
                                        ++ ", col: " ++ String.fromInt err.col ]
                         ]
             ) model.errors
+        , div [ class "states" ] [
+               case model.states of
+                   Nothing -> text "..."
+                   Just states -> ul [] [ view_of_states states "root" ]
+              ]
         ]                             
 
 view_of_states : State TermAndFV -> String -> Html Msg
@@ -103,4 +95,3 @@ view_of_states state transType =
                                             EtaTrans s -> view_of_states s "eta"
                              ) children
                 ]
-    

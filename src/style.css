@@ -4,37 +4,34 @@ body {
     background-color: #171717;
 }
 
-#lambda-evaluator {
+.interpreter {
     text-align: center;
     margin: 40% auto;
     position: relative;
 }
 
-#lambda-evaluator *{
+.interpreter *{
     background: transparent;
     font-family: 'Inconsolata', monospace;
     color: #eee;
 }
 
-#states {
+.interpreter .states {
     text-align: left;
 }
 
-#console {
-}
-    
-::placeholder {
+.console .reader::placeholder {
   color: #999;
 }
 
-#expression-reader {
+.console .reader {
     text-align: left;
     border: 1px solid gray;
     background: rgba(0,0,0,0.5);
     outline: none;
 }
 
-#expression-submitter{
+.console .submitter{
     border: 1px solid gray;
     border-radius: 50px;
     height: max;
@@ -42,20 +39,20 @@ body {
     outline: none;
 }
 
-#states ul {
+.states ul {
     list-style-type: none;
     line-height: 1.25em;
 }
 
-#states ul li ul { 
+.states ul li ul { 
   margin-left: 20px;
 }
  
-#states ul li ul li {
+.states ul li ul li {
   position: relative;
 }
  
-#states ul li ul li::before {
+.states ul li ul li::before {
   content: "";
   position: absolute;
   top: 0;
@@ -65,11 +62,11 @@ body {
   border-left: 1px solid #3ff;
 }
  
-#states ul li ul li:last-child::before {
+.states ul li ul li:last-child::before {
   height: calc(.75em);
 }
  
-#states ul li ul li::after {
+.states ul li ul li::after {
   content: "";
   position: absolute;
   top: .75em;
@@ -78,7 +75,7 @@ body {
   border-bottom: 1px solid #3ff;
 }
 
-#states .back-edge::before {
+.states .back-edge::before {
     content: "";
     position: absolute;
     top: -10px;
@@ -90,7 +87,7 @@ body {
     border-bottom: 10px solid transparent;
 }
 
-#states .back-edge {
+.states .back-edge {
     border: 1px solid #3ff;
     border-left: 0;
     width: 10%;
@@ -99,7 +96,7 @@ body {
     position: absolute;
 }
 
-#states .back-edge::after {
+.states .back-edge::after {
     border: 1px solid #3ff;
     border-left: 0;
     border-top: 0;
@@ -108,26 +105,25 @@ body {
     position: absolute;
 }
 
-
 @media only screen and (min-width: 601px) {
-    #lambda-evaluator *{
-	font-size: 28px;
+    .interpreter *{
+	/*  font-size: 28px; */
     }
-    #expression-reader {
+    .interpreter .console .reader {
 	min-width: 360px;
     }
-    #expression-submitter {
+    .interpreter .console submitter {
 	margin-left: 10px;
     }
 }
 
 @media only screen and (max-width: 600px) {
-    #console {
+    .console {
 	width: 100%;
     }
     
-    #lambda-evaluator *{
-	font-size: 24px;
-	width: 100%;
+    .interpreter * {
+	/* font-size: 24px; */
+	/* width: 100%; */
     }
 }

@@ -56,10 +56,6 @@ substitute var termAndFV1 termAndFV2 =
                     , fv = S.remove x_ body__.fv
                     }
 
-beta : String -> TermAndFV -> TermAndFV -> TermAndFV
-beta var body val =
-    substitute var body val
-                                   
 -- convert to postfix notation
 getIndex : a -> List a -> Maybe Int
 getIndex x list =
