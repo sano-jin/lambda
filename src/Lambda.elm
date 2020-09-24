@@ -20,24 +20,18 @@ getIndexOf val list =
       
                
 -- l2TC termList env context
--- ==> (termAndContext, context)
-lit2TFV : TermLit -> List String -> List String 
-       -> (TermAndFV, List String)
-lit2TFV termLit env ctx =
+-- ==> termAndContext
+lit2TFV : TermLit -> List String -> TermAndFV
+lit2TFV termLit env =
     case termLit of
-        VarLit x ->
-            let fv = S.singleton x
-                ctx_ = if List.member x env then ctx
-                       else x::ctx
-            in
-                ({ term = VarVal x, fv = fv}, ctx_)
+        VarLit x -> { term = VarVal x, fv = S.singleton x}
         AppLit t1 t2 ->
-            let (tFV1, ctx1) = lit2TFV t1 env ctx
-                (tFV2, ctx2) = lit2TFV t2 env ctx1 in
-            ({ term = AppVal tFV1 tFV2, fv = S.union tFV1.fv tFV2.fv}, ctx2)
+            let tFV1 = lit2TFV t1 env
+                tFV2 = lit2TFV t2 env in
+            { term = AppVal tFV1 tFV2, fv = S.union tFV1.fv tFV2.fv}
         LamLit var body ->
-            let (bTFV, bCtx) = lit2TFV body (var::env) ctx in
-            ({ term = LamVal var bTFV, fv = S.remove var bTFV.fv}, bCtx)
+            let bTFV = lit2TFV body (var::env) in
+            { term = LamVal var bTFV, fv = S.remove var bTFV.fv}
 
 substitute : String -> TermAndFV -> TermAndFV -> TermAndFV
 substitute var termAndFV1 termAndFV2 =
@@ -53,11 +47,9 @@ substitute var termAndFV1 termAndFV2 =
             if x == var then termAndFV1
             else let (x_, body_) =
                          if S.member x termAndFV2.fv then
-                             let z = newVar x x
+                             let z = newVar x
                                          <| S.union termAndFV2.fv body.fv in
-                             (z
-                             , substitute x body {term = VarVal z
-                                                   , fv = S.singleton z })
+                             (z, substitute x body {term = VarVal z, fv = S.singleton z })
                          else (x, body)
                      body__ = substitute var body_ termAndFV2
                  in { term = LamVal x_ body__
@@ -71,7 +63,7 @@ beta var body val =
 -- convert to postfix notation
 getIndex : a -> List a -> Maybe Int
 getIndex x list =
-    let getIndexHelp l i = 
+    let getIndexHelp l i =
             case l of
                 [] -> Nothing
                 h::t -> if h == x then Just i
@@ -103,36 +95,24 @@ showCurriedAbs tFV =
 showAppFun tFV =
     case tFV.term of
         LamVal var body ->
-            "(\\" ++ var ++ showCurriedAbs body ++ ")"
+            "(" ++ showT tFV ++ ")"
         _ -> showT tFV
 
 showAppVal tFV =
     case tFV.term of
         VarVal _ -> showT tFV
-        AppVal tFV1 tFV2 -> "(" ++ showAppFun tFV1 ++ showAppVal tFV2 ++ ")"
+        AppVal tFV1 tFV2 -> "(" ++ showT tFV ++ ")"
         LamVal var body -> showAppFun tFV
                
-getNewVar : String -> String -> S.Set String -> String
-getNewVar start var fv =
-    case S.member var fv of
-        False -> var
-        True ->
-            if start <= "z" && start == var then getNewVar start "\u{00C0}" fv
-            else case var of
-                     "z" -> getNewVar start "A" fv
-                     "Z" -> getNewVar start "a" fv
-                     _ ->  getNewVar start (String.map
-                                             (\ch -> Char.fromCode
-                                                     <| Char.toCode ch + 1) var) fv                    
-
-newVar : String -> String -> S.Set String -> String
-newVar start var fv =
+newVar : String -> S.Set String -> String
+newVar var fv =
     case S.member var fv of
         False -> var
         True ->
             case var of
-                     "z" -> getNewVar start "A" fv
-                     "Z" -> getNewVar start "a" fv
-                     _ ->  getNewVar start (String.map
-                                             (\ch -> Char.fromCode
-                                                     <| Char.toCode ch + 1) var) fv                    
+                "z" -> newVar "A" fv
+                "Z" -> newVar "a" fv
+                _ ->  newVar (String.map
+                                  (\ch -> Char.fromCode
+                                       <| Char.toCode ch + 1) var) fv                    
+                      

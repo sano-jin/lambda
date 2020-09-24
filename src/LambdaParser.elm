@@ -12,7 +12,6 @@ type TermLit = VarLit String
              | LamLit String TermLit
 
 -- Lexer
-
 lexeme : Parser a -> Parser a
 lexeme p = p |. spaces 
 
@@ -22,20 +21,12 @@ lambda = lexeme <| oneOf [ symbol "\\"
                          , symbol "\u{00A5}"  -- yen mark
                          ]
 
-isSpace : Char -> Bool
-isSpace c = case c of
-                ' ' -> True
-                '\n' -> True
-                '\r' -> True
-                _ -> False
-         
 varLit : Parser String
 varLit = chompIf Char.isAlpha
        |> getChompedString
        |> lexeme
 
 -- Parser
-
 flip : (a -> b -> c) -> b -> a -> c
 flip f a b = f b a
 
@@ -68,7 +59,6 @@ termLits terms =
     |> Parser.map (\_ -> Done terms)
     ]
 
-
 varLits : List String -> Parser (Step (List String) (List String)) 
 varLits vars =
     oneOf
@@ -99,7 +89,6 @@ parser =
        |. end 
 
 -- show
-
 printLit term =
     case term of
         VarLit name -> name

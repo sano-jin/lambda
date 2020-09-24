@@ -22,18 +22,14 @@ main = Browser.sandbox { init = init
 
 type alias Model =
     { inputString : String
-    , result : String
     , states : Maybe (State TermAndFV)
-    , ctx : List String
     , errors : List DeadEnd
     }
 
 init : Model
 init =
-    { inputString = ""
-    , result = ""
+    { inputString = "(\\x.(\\y.xy)w)z"
     , states = Nothing
-    , ctx = []
     , errors = []
     }
 
@@ -48,10 +44,8 @@ update msg model =
     case msg of
         Eval str -> case run parser str of
                         Ok term ->
-                            let (tfv, ctx) = lit2TFV term [] [] in
-                            let valStr = showT tfv ++ " [" ++ String.join "," ctx ++ "]" in
-                            { model | result = valStr , errors = [], ctx = ctx, states = Just <| vm tfv }
-                        Err err -> { model | result = "", errors = err, states = Nothing }
+                            { model | errors = [], states = Just <| vm <| lit2TFV term [] }
+                        Err err -> { model | errors = err, states = Nothing }
                     
         Change str ->
             { model | inputString = str }
@@ -74,12 +68,11 @@ view model =
                     , placeholder "input lambda expression \u{23CE}"
                     , value model.inputString, onInput Change ] []
             , button [ id "expression-submitter"
-                     , onClick <| Eval model.inputString ] [ text "parse" ]
-            , div [] [ text (model.result) ]
+                     , onClick <| Eval model.inputString ] [ text "run" ]
             ]
         , div [ id "states" ] [
                case model.states of
-                   Nothing -> text "Nothing"
+                   Nothing -> text "..."
                    Just states -> ul [] [ view_of_states states "root" ]
               ]
         , div [] <| List.map
@@ -95,14 +88,15 @@ view model =
 view_of_states : State TermAndFV -> String -> Html Msg
 view_of_states state transType =
     case state of
-        Join i -> li [ style "height" <| String.fromInt (i * 20)
-                      , class "join"
-                      , class transType ]
-                  [ text <| transType ++ " join " ++ String.fromInt i ]
+        Join i -> li [ class "join"
+                     , class transType ]
+                  [ div [] [text <| transType ]
+                  , div [ class "back-edge"
+                        , style "height" <| String.fromFloat (toFloat i * 1.25) ++ "em" ] []
+                  ]
         State term children ->
             li [ class transType ]
-                [ div [] [ text transType ]
-                , div [ class "term" ] [ text <| showT term ]
+                [ div [ class "term" ] [ text <| transType ++ ": " ++ showT term ]
                 , ul [ class "children" ] <|
                     List.map (\trans -> case trans of
                                             BetaTrans s -> view_of_states s "beta"

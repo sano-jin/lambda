@@ -6,7 +6,7 @@ body {
 
 #lambda-evaluator {
     text-align: center;
-    margin: 100px auto;
+    margin: 40% auto;
     position: relative;
 }
 
@@ -14,6 +14,10 @@ body {
     background: transparent;
     font-family: 'Inconsolata', monospace;
     color: #eee;
+}
+
+#states {
+    text-align: left;
 }
 
 #console {
@@ -38,9 +42,72 @@ body {
     outline: none;
 }
 
-#states {
-    text-align: left;
+#states ul {
+    list-style-type: none;
+    line-height: 1.25em;
 }
+
+#states ul li ul { 
+  margin-left: 20px;
+}
+ 
+#states ul li ul li {
+  position: relative;
+}
+ 
+#states ul li ul li::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -16px;
+  width: 10px;
+  height: calc(100%);
+  border-left: 1px solid #3ff;
+}
+ 
+#states ul li ul li:last-child::before {
+  height: calc(.75em);
+}
+ 
+#states ul li ul li::after {
+  content: "";
+  position: absolute;
+  top: .75em;
+  left: -16px;
+  width: 10px;
+  border-bottom: 1px solid #3ff;
+}
+
+#states .back-edge::before {
+    content: "";
+    position: absolute;
+    top: -10px;
+    width: 0;
+    height: 0;
+    left: -20px;
+    border-top: 10px solid transparent;
+    border-right: 20px solid #3ff;
+    border-bottom: 10px solid transparent;
+}
+
+#states .back-edge {
+    border: 1px solid #3ff;
+    border-left: 0;
+    width: 10%;
+    bottom: .5em;
+    left: 80%;
+    position: absolute;
+}
+
+#states .back-edge::after {
+    border: 1px solid #3ff;
+    border-left: 0;
+    border-top: 0;
+    width: 10%;
+    bottom: .5em;
+    position: absolute;
+}
+
 
 @media only screen and (min-width: 601px) {
     #lambda-evaluator *{
@@ -64,4 +131,3 @@ body {
 	width: 100%;
     }
 }
-
