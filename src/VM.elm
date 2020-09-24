@@ -6,8 +6,7 @@ import Set as S
 
 type Trans a = BetaTrans (State a)
              | EtaTrans (State a)
-    
-    
+        
 type State a = State a (List (Trans a))
              | Join Int
 
@@ -16,7 +15,6 @@ type TermCrumb = AppLeftCrumb TermAndFV
                | LamCrumb String
                  
 type alias TermZipper = (TermAndFV, List TermCrumb)
-
 
 goUpTerm : TermZipper -> TermZipper
 goUpTerm zipper =

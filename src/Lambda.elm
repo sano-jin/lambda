@@ -9,18 +9,6 @@ type TermVal = VarVal String
              | AppVal TermAndFV TermAndFV
              | LamVal String TermAndFV
 
-getIndexOf : a -> List a -> Result Int Int
-getIndexOf val list =
-    let getIndexOfHelp l i = 
-            case l of
-                [] -> Err i
-                h::t -> if h == val then Ok i
-                        else getIndexOfHelp t (i + 1)
-    in getIndexOfHelp list 0
-      
-               
--- l2TC termList env context
--- ==> termAndContext
 lit2TFV : TermLit -> List String -> TermAndFV
 lit2TFV termLit env =
     case termLit of
@@ -109,6 +97,6 @@ newVar var fv =
                 "z" -> newVar "A" fv
                 "Z" -> newVar "a" fv
                 _ ->  newVar (String.map
-                                  (\ch -> Char.fromCode
-                                       <| Char.toCode ch + 1) var) fv                    
+                                  (Char.fromCode << (+) 1 << Char.toCode) var) fv
+                      
                       
