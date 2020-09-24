@@ -34,9 +34,9 @@ topMostTerm zipper =
 
 vm : TermAndFV -> State TermAndFV
 vm termAndFV =
-    let (children, _) = eval (termAndFV, []) { dict = D.singleton (toPostfixNotation termAndFV []) 0
-                                             , n =  0 } in
-    State termAndFV children
+    State termAndFV
+        <| Tuple.first <| eval (termAndFV, []) { dict = D.singleton (toPostfixNotation termAndFV []) 0
+                                               , n = 1 }   
     
 evalChildren fun val termPath states =
     let (funChildren, funStates) =
