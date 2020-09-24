@@ -5,3 +5,5 @@ repl-temp-*
 *~
 index.html
 *.js
+node_modules/*
+package-lock.json
