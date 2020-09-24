@@ -36,8 +36,8 @@ vm : TermAndFV -> State TermAndFV
 vm termAndFV =
     State termAndFV
         <| Tuple.first
-            <| eval (termAndFV, []) { dict = D.singleton (toPostfixNotation termAndFV []) 0
-                                    , n = 1 }   
+            <| eval (termAndFV, [])
+                { dict = D.singleton (toPostfixNotation termAndFV []) 0, n = 1 }   
 
 update : (s -> (a, s)) -> (s -> (b, s)) -> (a -> b -> c) -> s -> (c, s)
 update f g h s =
