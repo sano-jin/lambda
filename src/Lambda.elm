@@ -27,7 +27,7 @@ substitute var termAndFV1 termAndFV2 =
         VarVal x -> if x == var then termAndFV2
                     else termAndFV1
         AppVal fun val ->
-            let (fun_, val_) =  (substitute var fun termAndFV2, substitute var val termAndFV2) in
+            let (fun_, val_) = (substitute var fun termAndFV2, substitute var val termAndFV2) in
             { term = AppVal fun_ val_
             , fv = S.union fun_.fv val_.fv
             }
@@ -98,5 +98,3 @@ newVar var fv =
                 "Z" -> newVar "a" fv
                 _ ->  newVar (String.map
                                   (Char.fromCode << (+) 1 << Char.toCode) var) fv
-                      
-                      

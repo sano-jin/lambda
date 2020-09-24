@@ -35,36 +35,38 @@ topMostTerm zipper =
 vm : TermAndFV -> State TermAndFV
 vm termAndFV =
     State termAndFV
-        <| Tuple.first <| eval (termAndFV, []) { dict = D.singleton (toPostfixNotation termAndFV []) 0
-                                               , n = 1 }   
-    
-evalChildren fun val termPath states =
-    let (funChildren, funStates) =
-            eval (fun, AppLeftCrumb val::termPath) states in
-    let (valChildren, valStates) =
-            eval (val, AppRightCrumb fun::termPath) funStates in
-    (funChildren ++ valChildren, valStates)
-                
+        <| Tuple.first
+            <| eval (termAndFV, []) { dict = D.singleton (toPostfixNotation termAndFV []) 0
+                                    , n = 1 }   
+
+update : (s -> (a, s)) -> (s -> (b, s)) -> (a -> b -> c) -> s -> (c, s)
+update f g h s =
+    let (a, s_) = f s
+        (b, s__) = g s_ in
+    (h a b, s__)    
+
+evalChildren : TermAndFV -> TermAndFV -> List TermCrumb -> States -> (List (Trans TermAndFV), States)
+evalChildren fun val termPath =
+    update (eval (fun, AppLeftCrumb val::termPath)) (eval (val, AppRightCrumb fun::termPath)) (++)
+        
 eval : TermZipper -> States -> (List (Trans TermAndFV), States)
-eval (termAndFV, termPath) states =
+eval (termAndFV, termPath) =
         case termAndFV.term of
             AppVal fun val ->
                 case fun.term of
                     LamVal var body ->
-                        let (evalued, states_) = betaTrans var body val termPath states in
-                        let (children, states__) = evalChildren fun val termPath states_ in
-                        (BetaTrans evalued::children, states__) 
-                    _ -> evalChildren fun val termPath states
+                        update (betaTrans var body val termPath) (evalChildren fun val termPath)
+                            (\e es -> BetaTrans e::es)
+                    _ -> evalChildren fun val termPath
             LamVal var body ->
                 case body.term of
                     AppVal fun val ->
                         if val.term == VarVal var && not (S.member var fun.fv) then
-                            let (evalued, states_) = etaTrans fun termPath states in
-                            let (children, states__) = eval (body, LamCrumb var::termPath) states_ in
-                            (EtaTrans evalued::children, states__) 
-                        else eval (body, LamCrumb var::termPath) states
-                    _ -> eval (body, LamCrumb var::termPath) states
-            _ -> ([], states)
+                            update (etaTrans fun termPath) (eval (body, LamCrumb var::termPath))
+                                (\e es -> EtaTrans e::es)
+                        else eval (body, LamCrumb var::termPath)
+                    _ -> eval (body, LamCrumb var::termPath)
+            _ -> Tuple.pair []
 
 betaTrans : String -> TermAndFV -> TermAndFV -> List TermCrumb -> States -> (State TermAndFV, States)
 betaTrans var body val termPath states =
@@ -74,10 +76,9 @@ betaTrans var body val termPath states =
     in
         case D.get postfix states.dict of
             Nothing ->
-                let (children, states_ ) =
-                        eval (evalued, []) { dict = D.insert postfix states.n states.dict
-                                           , n = states.n + 1 } in
-                (State evalued children, states_)
+                Tuple.mapFirst (State evalued)
+                    <| eval (evalued, []) { dict = D.insert postfix states.n states.dict
+                                           , n = states.n + 1 }
             Just i -> (Join (states.n - i), { states | n = states.n + 1 })
 
 etaTrans : TermAndFV -> List TermCrumb -> States -> (State TermAndFV, States)
@@ -87,8 +88,7 @@ etaTrans fun termPath states =
     in
         case D.get postfix states.dict of
             Nothing ->
-                let (children, states_) =
-                        eval (term, []) { dict = D.insert postfix states.n states.dict
-                                        , n = states.n + 1 } in
-                (State term children, states_)
+                Tuple.mapFirst (State term)
+                        <| eval (term, []) { dict = D.insert postfix states.n states.dict
+                                           , n = states.n + 1 }
             Just i -> (Join (states.n - i), { states | n = states.n + 1 })
