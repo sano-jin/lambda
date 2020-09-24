@@ -15,7 +15,8 @@ type TermCrumb = AppLeftCrumb TermAndFV
                | LamCrumb String
                  
 type alias TermZipper = (TermAndFV, List TermCrumb)
-
+type alias States = { dict : D.Dict String Int, n : Int }
+    
 goUpTerm : TermZipper -> TermZipper
 goUpTerm zipper =
     case zipper of
@@ -33,58 +34,61 @@ topMostTerm zipper =
 
 vm : TermAndFV -> State TermAndFV
 vm termAndFV =
-    let (children, _, _) = eval (termAndFV, []) (D.singleton (toPostfixNotation termAndFV []) 0) 0 in
+    let (children, _) = eval (termAndFV, []) { dict = D.singleton (toPostfixNotation termAndFV []) 0
+                                             , n =  0 } in
     State termAndFV children
     
-evalChildren fun val termPath statesDict stateIndex =
-    let (funChildren, funStatesDict, funStateIndex) =
-            eval (fun, AppLeftCrumb val::termPath) statesDict stateIndex in
-    let (valChildren, valStatesDict, valStateIndex) =
-            eval (val, AppRightCrumb fun::termPath) funStatesDict funStateIndex in
-    (funChildren ++ valChildren, valStatesDict, valStateIndex)
+evalChildren fun val termPath states =
+    let (funChildren, funStates) =
+            eval (fun, AppLeftCrumb val::termPath) states in
+    let (valChildren, valStates) =
+            eval (val, AppRightCrumb fun::termPath) funStates in
+    (funChildren ++ valChildren, valStates)
                 
-eval : TermZipper -> D.Dict String Int -> Int -> (List (Trans TermAndFV), D.Dict String Int, Int)
-eval (termAndFV, termPath) statesDict stateIndex =
+eval : TermZipper -> States -> (List (Trans TermAndFV), States)
+eval (termAndFV, termPath) states =
         case termAndFV.term of
             AppVal fun val ->
                 case fun.term of
                     LamVal var body ->
-                        let (evalued, statesDict_, stateIndex_) = betaTrans var body val termPath statesDict stateIndex in
-                        let (children, statesDict__, stateIndex__) = evalChildren fun val termPath statesDict_ stateIndex_ in
-                        (BetaTrans evalued::children, statesDict__, stateIndex__) 
-                    _ -> evalChildren fun val termPath statesDict stateIndex
+                        let (evalued, states_) = betaTrans var body val termPath states in
+                        let (children, states__) = evalChildren fun val termPath states_ in
+                        (BetaTrans evalued::children, states__) 
+                    _ -> evalChildren fun val termPath states
             LamVal var body ->
                 case body.term of
                     AppVal fun val ->
                         if val.term == VarVal var && not (S.member var fun.fv) then
-                            let (evalued, statesDict_, stateIndex_) = etaTrans fun termPath statesDict stateIndex in
-                            let (children, statesDict__, stateIndex__) = eval (body, LamCrumb var::termPath) statesDict_ stateIndex_ in
-                            (EtaTrans evalued::children, statesDict__, stateIndex__) 
-                        else eval (body, LamCrumb var::termPath) statesDict stateIndex
-                    _ -> eval (body, LamCrumb var::termPath) statesDict stateIndex
-            _ -> ([], statesDict, stateIndex)
+                            let (evalued, states_) = etaTrans fun termPath states in
+                            let (children, states__) = eval (body, LamCrumb var::termPath) states_ in
+                            (EtaTrans evalued::children, states__) 
+                        else eval (body, LamCrumb var::termPath) states
+                    _ -> eval (body, LamCrumb var::termPath) states
+            _ -> ([], states)
 
-betaTrans : String -> TermAndFV -> TermAndFV -> List TermCrumb -> D.Dict String Int -> Int -> (State TermAndFV, D.Dict String Int, Int)
-betaTrans var body val termPath statesDict stateIndex =
+betaTrans : String -> TermAndFV -> TermAndFV -> List TermCrumb -> States -> (State TermAndFV, States)
+betaTrans var body val termPath states =
     let evaluedTerm = substitute var body val
         (evalued, _) = topMostTerm (evaluedTerm, termPath)
         postfix = toPostfixNotation evalued []
     in
-        case D.get postfix statesDict of
+        case D.get postfix states.dict of
             Nothing ->
-                let (children, statesDict_, stateIndex_) =
-                        eval (evalued, []) (D.insert postfix stateIndex statesDict) (stateIndex + 1) in
-                (State evalued children, statesDict_, stateIndex_)
-            Just i -> (Join (stateIndex - i), statesDict, stateIndex + 1)
+                let (children, states_ ) =
+                        eval (evalued, []) { dict = D.insert postfix states.n states.dict
+                                           , n = states.n + 1 } in
+                (State evalued children, states_)
+            Just i -> (Join (states.n - i), { states | n = states.n + 1 })
 
-etaTrans : TermAndFV -> List TermCrumb -> D.Dict String Int -> Int -> (State TermAndFV, D.Dict String Int, Int)
-etaTrans fun termPath statesDict stateIndex =
+etaTrans : TermAndFV -> List TermCrumb -> States -> (State TermAndFV, States)
+etaTrans fun termPath states =
     let (term, _) = topMostTerm (fun, termPath)
         postfix = toPostfixNotation term []
     in
-        case D.get postfix statesDict of
+        case D.get postfix states.dict of
             Nothing ->
-                let (children, statesDict_, stateIndex_) =
-                        eval (term, []) (D.insert postfix stateIndex statesDict) (stateIndex + 1) in
-                (State term children, statesDict_, stateIndex_)
-            Just i -> (Join (stateIndex - i), statesDict, stateIndex + 1)
+                let (children, states_) =
+                        eval (term, []) { dict = D.insert postfix states.n states.dict
+                                        , n = states.n + 1 } in
+                (State term children, states_)
+            Just i -> (Join (states.n - i), { states | n = states.n + 1 })
