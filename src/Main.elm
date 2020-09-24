@@ -41,7 +41,7 @@ update msg model =
     case msg of
         Eval str -> case run parser str of
                         Ok term ->
-                            { model | errors = [], states = Just <| vm <| lit2TFV term [] }
+                            { model | errors = [], states = Just <| vm <| lit2TFV term }
                         Err err -> { model | errors = err, states = Nothing }
                     
         Change str ->

@@ -9,16 +9,16 @@ type TermVal = VarVal String
              | AppVal TermAndFV TermAndFV
              | LamVal String TermAndFV
 
-lit2TFV : TermLit -> List String -> TermAndFV
-lit2TFV termLit env =
+lit2TFV : TermLit -> TermAndFV
+lit2TFV termLit =
     case termLit of
         VarLit x -> { term = VarVal x, fv = S.singleton x}
         AppLit t1 t2 ->
-            let tFV1 = lit2TFV t1 env
-                tFV2 = lit2TFV t2 env in
+            let tFV1 = lit2TFV t1
+                tFV2 = lit2TFV t2 in
             { term = AppVal tFV1 tFV2, fv = S.union tFV1.fv tFV2.fv}
         LamLit var body ->
-            let bTFV = lit2TFV body (var::env) in
+            let bTFV = lit2TFV body in
             { term = LamVal var bTFV, fv = S.remove var bTFV.fv}
 
 substitute : String -> TermAndFV -> TermAndFV -> TermAndFV
