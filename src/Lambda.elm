@@ -46,13 +46,13 @@ substitute var termAndFV1 termAndFV2 =
 
 -- convert to postfix notation
 getIndex : a -> List a -> Maybe Int
-getIndex x list =
-    let getIndexHelp l i =
-            case l of
+getIndex x =
+    let getIndexHelp i list =
+            case list of
                 [] -> Nothing
                 h::t -> if h == x then Just i
-                        else getIndexHelp t (i + 1)
-    in getIndexHelp list 0
+                        else getIndexHelp (i + 1) t
+    in getIndexHelp 0
     
 toPostfixNotation : TermAndFV -> List String -> String
 toPostfixNotation tFV env =
