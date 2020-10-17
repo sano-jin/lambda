@@ -6,8 +6,10 @@ body {
 
 .interpreter {
     text-align: center;
-    margin: 40% auto;
+    margin: 20px auto;
     position: relative;
+    overflow-x: scroll;
+    display: block;
 }
 
 .interpreter *{
